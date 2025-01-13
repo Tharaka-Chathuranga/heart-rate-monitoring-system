@@ -25,8 +25,6 @@ wheels/
 *.egg
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
 
@@ -86,12 +84,16 @@ celerybeat-schedule
 
 # dotenv
 .env
+.env.*
 .venv
 env/
-services/api-gateway/venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Ignore specific virtual environments
+services/api_gateway/venv/
+tests/venv/
 
 # Spyder project settings
 .spyderproject
@@ -132,6 +134,6 @@ yarn-error.log
 *.log
 docker-compose.override.yml
 
-# Local environment
+# Local environment files
 .env.local
 .env.*.local
