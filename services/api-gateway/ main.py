@@ -1,137 +1,38 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+from fastapi import FastAPI, Request
+import requests
 
-# C extensions
-*.so
+app = FastAPI()
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+# Service URLs
+services = {
+    'data-ingestion': 'http://localhost:5001',
+    'real-time-monitoring': 'http://localhost:5002',
+    'historical-analysis': 'http://localhost:5003',
+    'alert-service': 'http://localhost:5004'
+}
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+# Proxy requests to the appropriate service
+@app.api_route('/api/{service}/{path:path}', methods=['GET', 'POST', 'PUT', 'DELETE'])
+async def proxy(service: str, path: str, request: Request):
+    if service not in services:
+        return {"error": "Service not found"}, 404
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+    url = f"{services[service]}/{path}"
+    method = request.method
+    headers = {key: value for key, value in request.headers.items() if key != 'host'}
+    data = await request.body()
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
+    response = requests.request(
+        method=method,
+        url=url,
+        headers=headers,
+        data=data,
+        cookies=request.cookies,
+        allow_redirects=False
+    )
 
-# Translations
-*.mo
-*.pot
+    return response.content, response.status_code, response.headers.items()
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-.python-version
-
-# celery beat schedule file
-celerybeat-schedule
-
-# dotenv
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# VS Code
-.vscode/
-
-# IntelliJ IDEA
-.idea/
-
-# Node.js
-node_modules/
-npm-debug.log
-yarn-error.log
-
-# Docker
-*.log
-docker-compose.override.yml
-
-# Local environment
-.env.local
-.env.*.local
+if __name__ == '__main__':
+    import uvicorn
+    uvicorn.run(app, host='0.0.0.0', port=3000)
