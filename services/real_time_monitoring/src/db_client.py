@@ -1,52 +1,35 @@
-# from influxdb_client import InfluxDBClient, Point, WritePrecision
-# from datetime import datetime
-# import os
-# from dotenv import load_dotenv
-#
-# # Load environment variables from .env file
-# load_dotenv()
-#
-# # Configuration
-# INFLUXDB_URL = os.getenv("INFLUXDB_URL")
-# INFLUXDB_TOKEN = os.getenv("INFLUXDB_TOKEN")
-# INFLUXDB_ORG = os.getenv("INFLUXDB_ORG")
-# INFLUXDB_BUCKET = os.getenv("INFLUXDB_BUCKET")
-#
-# # Create InfluxDB client
-# client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG)
-# write_api = client.write_api(write_options=WritePrecision.NS)
-#
-# def write_heart_rate_data(user_id, heart_rate):
-#     point = Point("heart_rate") \
-#         .tag("user_id", user_id) \
-#         .field("value", heart_rate) \
-#         .time(datetime.utcnow(), WritePrecision.NS)
-#     write_api.write(bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=point)
+from influxdb import InfluxDBClient
+import logging
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-from influxdb_client import InfluxDBClient, Point, WritePrecision  # Fix import
-from datetime import datetime
-import os
-from dotenv import load_dotenv
+# InfluxDB configuration
+INFLUXDB_HOST = 'localhost'
+INFLUXDB_PORT = 8086
+INFLUXDB_DATABASE = 'heart_rate_db'
 
-# Load environment variables
-load_dotenv()
-
-# InfluxDB Configuration
-INFLUXDB_URL = os.getenv("INFLUXDB_URL", "http://localhost:8086")
-INFLUXDB_TOKEN = os.getenv("INFLUXDB_TOKEN")
-INFLUXDB_ORG = os.getenv("INFLUXDB_ORG")
-INFLUXDB_BUCKET = os.getenv("INFLUXDB_BUCKET")
-
-# Initialize InfluxDB client
-client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG)
-write_api = client.write_api()
+# Create InfluxDB client
+client = InfluxDBClient(host=INFLUXDB_HOST, port=INFLUXDB_PORT)
+client.switch_database(INFLUXDB_DATABASE)
 
 def write_heart_rate_data(user_id, heart_rate):
     """Write heart rate data to InfluxDB"""
-    point = Point("heart_rate") \
-        .tag("user_id", str(user_id)) \
-        .field("value", float(heart_rate)) \
-        .time(datetime.utcnow())
-
-    write_api.write(bucket=INFLUXDB_BUCKET, record=point)
+    json_body = [
+        {
+            "measurement": "heart_rate",
+            "tags": {
+                "user_id": user_id
+            },
+            "fields": {
+                "value": heart_rate
+            }
+        }
+    ]
+    try:
+        client.write_points(json_body)
+        logger.info(f"Successfully wrote heart rate data for user {user_id}")
+    except Exception as e:
+        logger.error(f"Error writing heart rate data to InfluxDB: {e}")
+        raise
